@@ -1,8 +1,10 @@
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import queens.base.*;
 
@@ -187,8 +189,12 @@ public class MyQueensSolver implements IQueensSolver
 		int newValue = 0;
 		int takenSideSteps = 0;
 		LinkedList<Integer> newProblem = null;
+		// collect possible sidesteps if nessecary
 		List<LinkedList<Integer>> sideSteps = new LinkedList<LinkedList<Integer>>();
+		// collect the best possible states and choose random
 		List<LinkedList<Integer>> collect = new LinkedList<LinkedList<Integer>>();
+		// do not visit on state twice while side-stepping
+		Map<Integer, Boolean> visitedStates = new HashMap<Integer, Boolean>();
 		Boolean foundSomethingNew = true;
 		//until we cant get better
 		while(foundSomethingNew){
@@ -223,7 +229,7 @@ public class MyQueensSolver implements IQueensSolver
 						} else {
 							//we only need the sideSteps if we havent found anything yet
 							if( newValue == value){
-								if(!foundSomethingNew) {
+								if(!foundSomethingNew && !visitedStates.containsKey(newProblem.hashCode())) {
 									sideSteps.add(new LinkedList<Integer>(newProblem));
 //								System.err.println("new SideStep "+newProblem);
 								} else {
@@ -236,12 +242,14 @@ public class MyQueensSolver implements IQueensSolver
 			}
 			if(foundSomethingNew){
 				problem = collect.get(random.nextInt(collect.size()));
+				visitedStates.clear();
 			}
 			//need to make a sidestep ?
 			if(!foundSomethingNew && !sideSteps.isEmpty() && (takenSideSteps < allowedSideSteps)){
 				takenSideSteps++;
 //				System.err.println("replace "+problem);
 				problem = sideSteps.get(random.nextInt(sideSteps.size()));
+				visitedStates.put(problem.hashCode(), false);
 //				System.err.println("with    "+problem);
 				foundSomethingNew = true;
 			}
@@ -254,6 +262,7 @@ public class MyQueensSolver implements IQueensSolver
 		int takenSideSteps = 0;
 		LinkedList<Integer> newProblem = null;
 		LinkedList<Integer> sideStep = null;
+		Map<Integer, Boolean> visitedStates = new HashMap<Integer, Boolean>();
 		Boolean foundSomethingNew = true;
 		//for each column
 		while(foundSomethingNew && value > 0){
@@ -273,6 +282,7 @@ public class MyQueensSolver implements IQueensSolver
 						if( newValue < value){
 							//reset sidesteps
 							takenSideSteps = 0;
+							visitedStates.clear();
 							problem = newProblem;
 							value = evaluateState(problem);
 							foundSomethingNew = true;
@@ -281,7 +291,7 @@ public class MyQueensSolver implements IQueensSolver
 								return;
 							}
 						} else {
-							if( newValue == value && sideStep == null){
+							if( newValue == value && sideStep == null && !visitedStates.containsKey(newProblem.hashCode())){
 								sideStep = new LinkedList<Integer>(newProblem);
 							}
 						}
@@ -297,6 +307,7 @@ public class MyQueensSolver implements IQueensSolver
 			if(!foundSomethingNew && sideStep!=null && (takenSideSteps < allowedSideSteps)){
 				takenSideSteps++;
 				problem = sideStep;
+				visitedStates.put(problem.hashCode(), true);
 				foundSomethingNew = true;
 			}
 		}
