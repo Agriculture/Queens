@@ -1,3 +1,4 @@
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -67,20 +68,27 @@ public class MyQueensSolver implements IQueensSolver
     // Zeile 2) und die rechte Dame steht in der mittleren Zeile.
     public SolveErg solveNQueens(int queenCount, boolean useFirstChoice, int allowedSideSteps)
     {
+		System.err.println("========= King of Queens ============");
+		SolveErg erg;
         //1. zufälliges N-Damen-Problem erstellen:
         List<Integer> problem = makeRandomNQueens(queenCount);
 
         //2. je nach den Parametern, versuchen das zu lösen
         if(useFirstChoice)
 			solveFirstChoice(problem,allowedSideSteps);
-//        else
-			//solveBestChoice(problem,allowedSideSteps);
+        else
+			solveBestChoice(problem,allowedSideSteps);
 
         //3. Statistik und Ergebnisse zurückgeben
 		if(solution != null)
-            return SolveErg.makeErgForSolvable(steps, getSolutionQueenPositions(queenCount));
+            erg = SolveErg.makeErgForSolvable(steps, getSolutionQueenPositions(queenCount));
         else
-             return SolveErg.makeErgForUnsolvable(steps);
+            erg = SolveErg.makeErgForUnsolvable(steps);
+		
+		//reset
+		solution = null;
+		steps = 0;
+		return erg;
     }
 
     // Die zweite Aufgabe ist es herauszufinden, ob pro Damenanzahl eine optimale Seitschrittanzahl
@@ -123,6 +131,60 @@ public class MyQueensSolver implements IQueensSolver
 		return field;
 	}
 
+	private void solveBestChoice(List<Integer> problem, int allowedSideSteps) {
+		int value = evaluateState(problem);
+		int newValue = 0;
+		int takenSideSteps = 0;
+		LinkedList<Integer> newProblem = null;
+		List<LinkedList<Integer>> sideSteps = new LinkedList<LinkedList<Integer>>();
+		Boolean foundSomethingNew = true;
+		//until we cant get better
+		while(foundSomethingNew){
+			System.err.println(problem+" "+value);
+
+			steps++;
+			foundSomethingNew = false;
+			//for each column
+			for(int i=0; i<problem.size(); i++){
+				newProblem = new LinkedList<Integer>(problem);
+				//for each possible new location
+				for(int j=0; j<problem.size(); j++){
+					//dont put it in the same field
+					if(j != problem.get(i)){
+						newProblem.set(i, j);
+						// is it better ?
+						newValue = evaluateState(newProblem);
+						if( newValue < value){
+							//reset sidesteps
+							takenSideSteps = 0;
+							problem = newProblem;
+							value = newValue;
+							foundSomethingNew = true;
+							if(value == 0){
+								solution = problem;
+								return;
+							}
+						} else {
+							//we only need the sideSteps if we havent found anything yet
+							if( !foundSomethingNew && newValue == value){
+								sideSteps.add(new LinkedList<Integer>(newProblem));
+//								System.err.println("new SideStep "+newProblem);
+							}
+						}
+					}
+				}
+			}
+			//need to make a sidestep ?
+			if(!foundSomethingNew && !sideSteps.isEmpty() && (takenSideSteps < allowedSideSteps)){
+				takenSideSteps++;
+//				System.err.println("replace "+problem);
+				problem = sideSteps.get(random.nextInt(sideSteps.size()));
+//				System.err.println("with    "+problem);
+				foundSomethingNew = true;
+			}
+		}
+	}
+
 	private void solveFirstChoice(List<Integer> problem, int allowedSideSteps) {
 		int value = evaluateState(problem);
 		int newValue = 0;
@@ -132,35 +194,40 @@ public class MyQueensSolver implements IQueensSolver
 		Boolean foundSomethingNew = true;
 		//for each column
 		while(foundSomethingNew && value > 0){
+			System.err.println(problem+" "+value);
 			steps++;
 			foundSomethingNew = false;
 			for(int i=0; i<problem.size(); i++){
 				newProblem = new LinkedList<Integer>(problem);
 				//for each possible new location (even the same)
 				for(int j=0; j<problem.size(); j++){
-					newProblem.set(i, j);
-					// is it better ?
-					newValue = evaluateState(newProblem);
-					if( newValue < value){
-						//reset sidesteps
-						takenSideSteps = 0;
-						problem = newProblem;
-						foundSomethingNew = true;
-					} else {
-						if( newValue == value)
-							sideSteps.add(newProblem);
+					//dont put it in the same field
+					if(j != problem.get(i)){
+						newProblem.set(i, j);
+						// is it better ?
+						newValue = evaluateState(newProblem);
+						if( newValue < value){
+							//reset sidesteps
+							takenSideSteps = 0;
+							problem = newProblem;
+							value = evaluateState(problem);
+							foundSomethingNew = true;
+						} else {
+							if( newValue == value)
+								sideSteps.add(new LinkedList<Integer>(newProblem));
+						}
 					}
 					if(foundSomethingNew)
 						break;
+
 				}
 				if(foundSomethingNew)
 					break;
 			}
-			value = evaluateState(problem);
 			//need to make a sidestep ?
 			if(!foundSomethingNew && !sideSteps.isEmpty() && (takenSideSteps < allowedSideSteps)){
 				takenSideSteps++;
-				problem = sideSteps.get((new Random()).nextInt(sideSteps.size()));
+				problem = sideSteps.get(random.nextInt(sideSteps.size()));
 				foundSomethingNew = true;
 			}
 		}
