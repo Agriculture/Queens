@@ -1,3 +1,4 @@
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -68,7 +69,7 @@ public class MyQueensSolver implements IQueensSolver
     // Zeile 2) und die rechte Dame steht in der mittleren Zeile.
     public SolveErg solveNQueens(int queenCount, boolean useFirstChoice, int allowedSideSteps)
     {
-		System.err.println("========= King of Queens ============");
+//		System.err.println("========= King of Queens ============");
 		SolveErg erg;
         //1. zufälliges N-Damen-Problem erstellen:
         List<Integer> problem = makeRandomNQueens(queenCount);
@@ -106,6 +107,49 @@ public class MyQueensSolver implements IQueensSolver
     {
         double[] statistik=new double[101];
 
+		DecimalFormat df = new DecimalFormat("#.000");
+
+		List<Integer> neededStepsSolved = new LinkedList<Integer>();
+		List<Integer> neededStepsUnsolved = new LinkedList<Integer>();
+
+		int countSolved;
+
+		//for 100 different step counts
+		for(int i=0; i<101; i++){
+			neededStepsSolved.clear();
+			neededStepsUnsolved.clear();
+			countSolved = 0;
+			// try it many times
+			for(int j=0; j<tryCount; j++){
+				SolveErg erg = this.solveNQueens(queenCount, useFirstChoice, i);
+				// svave the steps
+				if(!erg.isUnsolvable()){
+					countSolved++;
+					neededStepsSolved.add(erg.getSteps());
+				} else {
+					neededStepsUnsolved.add(erg.getSteps());
+				}
+			}
+			// and put the average in the statistik
+			int sum2 = 0;
+			for(Integer in : neededStepsSolved){
+				sum2+= in;
+			}
+			int sum3 = 0;
+			for(Integer in : neededStepsUnsolved){
+				sum3+= in;
+			}
+			Double averageStepsSolved = new Double(sum2) / new Double(neededStepsSolved.size());
+			Double averageStepsUnsolved = new Double(sum3) / new Double(neededStepsUnsolved.size());
+			Double percentSolved = new Double(countSolved) / new Double(tryCount);
+
+			Double averageSteps = averageStepsSolved+(1/percentSolved-1)*averageStepsUnsolved;
+
+			statistik[i] = averageSteps;
+			System.out.println("Sidesteps "+i+"\tSteps "+df.format(averageSteps)+"\tsolved "+df.format(percentSolved*100)
+					+"%\tsteps solved "+df.format(averageStepsSolved)+"\tsteps unsolved "+df.format(averageStepsUnsolved));
+		}
+
         //für alle erlaubten Seitenschrittanzahlen von 0 bis einschliesslich 100:
         //    1.bestimme durch tryCount Versuche, die durchschnittlich nötige Zugzahl, um
         //    eine Lösung zu finden.
@@ -126,8 +170,15 @@ public class MyQueensSolver implements IQueensSolver
 
 	private List<Integer> makeRandomNQueens(int count){
 		List<Integer> field = new LinkedList<Integer>();
-		for(int i=0; i<count; i++)
-			field.add(random.nextInt(count));
+		for(int i=0; i<count; i++){
+			int value = random.nextInt(count);
+			if(!field.contains(value)){
+				field.add(value);
+			} else {
+				i--;
+				continue;
+			}
+		}
 		return field;
 	}
 
@@ -137,42 +188,54 @@ public class MyQueensSolver implements IQueensSolver
 		int takenSideSteps = 0;
 		LinkedList<Integer> newProblem = null;
 		List<LinkedList<Integer>> sideSteps = new LinkedList<LinkedList<Integer>>();
+		List<LinkedList<Integer>> collect = new LinkedList<LinkedList<Integer>>();
 		Boolean foundSomethingNew = true;
 		//until we cant get better
 		while(foundSomethingNew){
-			System.err.println(problem+" "+value);
+//			System.err.println(problem+" "+value);
 
 			steps++;
 			foundSomethingNew = false;
 			//for each column
 			for(int i=0; i<problem.size(); i++){
-				newProblem = new LinkedList<Integer>(problem);
 				//for each possible new location
 				for(int j=0; j<problem.size(); j++){
 					//dont put it in the same field
 					if(j != problem.get(i)){
+						newProblem = new LinkedList<Integer>(problem);
 						newProblem.set(i, j);
 						// is it better ?
 						newValue = evaluateState(newProblem);
 						if( newValue < value){
 							//reset sidesteps
 							takenSideSteps = 0;
-							problem = newProblem;
+
+							//reset collect
+							collect.clear();
+							collect.add(newProblem);
 							value = newValue;
+
 							foundSomethingNew = true;
 							if(value == 0){
-								solution = problem;
+								solution = new LinkedList<Integer>(newProblem);
 								return;
 							}
 						} else {
 							//we only need the sideSteps if we havent found anything yet
-							if( !foundSomethingNew && newValue == value){
-								sideSteps.add(new LinkedList<Integer>(newProblem));
+							if( newValue == value){
+								if(!foundSomethingNew) {
+									sideSteps.add(new LinkedList<Integer>(newProblem));
 //								System.err.println("new SideStep "+newProblem);
+								} else {
+									collect.add(new LinkedList<Integer>(newProblem));
+								}
 							}
 						}
 					}
 				}
+			}
+			if(foundSomethingNew){
+				problem = collect.get(random.nextInt(collect.size()));
 			}
 			//need to make a sidestep ?
 			if(!foundSomethingNew && !sideSteps.isEmpty() && (takenSideSteps < allowedSideSteps)){
@@ -190,19 +253,20 @@ public class MyQueensSolver implements IQueensSolver
 		int newValue = 0;
 		int takenSideSteps = 0;
 		LinkedList<Integer> newProblem = null;
-		List<LinkedList<Integer>> sideSteps = new LinkedList<LinkedList<Integer>>();
+		LinkedList<Integer> sideStep = null;
 		Boolean foundSomethingNew = true;
 		//for each column
 		while(foundSomethingNew && value > 0){
-			System.err.println(problem+" "+value);
+//			System.err.println(problem+" "+value);
 			steps++;
 			foundSomethingNew = false;
 			for(int i=0; i<problem.size(); i++){
-				newProblem = new LinkedList<Integer>(problem);
 				//for each possible new location (even the same)
 				for(int j=0; j<problem.size(); j++){
 					//dont put it in the same field
 					if(j != problem.get(i)){
+						newProblem = new LinkedList<Integer>(problem);
+
 						newProblem.set(i, j);
 						// is it better ?
 						newValue = evaluateState(newProblem);
@@ -212,9 +276,14 @@ public class MyQueensSolver implements IQueensSolver
 							problem = newProblem;
 							value = evaluateState(problem);
 							foundSomethingNew = true;
+							if(value == 0){
+								solution = new LinkedList<Integer>(problem);
+								return;
+							}
 						} else {
-							if( newValue == value)
-								sideSteps.add(new LinkedList<Integer>(newProblem));
+							if( newValue == value && sideStep == null){
+								sideStep = new LinkedList<Integer>(newProblem);
+							}
 						}
 					}
 					if(foundSomethingNew)
@@ -225,14 +294,11 @@ public class MyQueensSolver implements IQueensSolver
 					break;
 			}
 			//need to make a sidestep ?
-			if(!foundSomethingNew && !sideSteps.isEmpty() && (takenSideSteps < allowedSideSteps)){
+			if(!foundSomethingNew && sideStep!=null && (takenSideSteps < allowedSideSteps)){
 				takenSideSteps++;
-				problem = sideSteps.get(random.nextInt(sideSteps.size()));
+				problem = sideStep;
 				foundSomethingNew = true;
 			}
-		}
-		if(value == 0){
-			solution = problem;
 		}
 	}
 
