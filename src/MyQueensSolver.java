@@ -1,3 +1,7 @@
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
 import queens.base.*;
 
 // Dieses ist ein leeres Gerüst, welches das zu implementierende
@@ -43,6 +47,9 @@ import queens.base.*;
 //     mehr Schritte unternehmen.
 public class MyQueensSolver implements IQueensSolver
 {
+	private List<Integer> solution = null;
+	private int steps = 0;
+	private Random random = new Random();
     // Die erste Aufgabe ist es, für eine bestimmte Damenanzahl (queenCount),
     // eine Hillclimbingstrategie (firstChoice) und eine erlaubte Anzahl an sukzessiven
     // Seitschritten (allowedSideSteps) einen Lösungsversuch zu unternehmen.
@@ -61,21 +68,19 @@ public class MyQueensSolver implements IQueensSolver
     public SolveErg solveNQueens(int queenCount, boolean useFirstChoice, int allowedSideSteps)
     {
         //1. zufälliges N-Damen-Problem erstellen:
-        // problem=makeRandomNQueens(queenCount)
+        List<Integer> problem = makeRandomNQueens(queenCount);
 
         //2. je nach den Parametern, versuchen das zu lösen
-        //if(firstChoice)
-        //   solveFirstChoice(problem,allowedSideSteps)
-        //else
-        //   solveBestChoice(problem,allowedSideSteps)
+        if(useFirstChoice)
+			solveFirstChoice(problem,allowedSideSteps);
+//        else
+			//solveBestChoice(problem,allowedSideSteps);
 
         //3. Statistik und Ergebnisse zurückgeben
-        //int schritte=getSteps()
-        //if(gelöst)
-        //    return SolveErg.makeErgForSolvable(schritte, getSolutionQueenPositions())
-        //else
-        //     return SolveErg.makeErgForUnsolvable(schritte)
-        return SolveErg.makeErgForUnsolvable(0);
+		if(solution != null)
+            return SolveErg.makeErgForSolvable(steps, getSolutionQueenPositions(queenCount));
+        else
+             return SolveErg.makeErgForUnsolvable(steps);
     }
 
     // Die zweite Aufgabe ist es herauszufinden, ob pro Damenanzahl eine optimale Seitschrittanzahl
@@ -103,4 +108,84 @@ public class MyQueensSolver implements IQueensSolver
 
         return statistik;
     }
+
+	private int[] getSolutionQueenPositions(int queenCount) {
+		int[] sol = new int[queenCount];
+		for(int i=0; i<solution.size(); i++)
+			sol[i] = solution.get(i);
+		return sol;
+	}
+
+	private List<Integer> makeRandomNQueens(int count){
+		List<Integer> field = new LinkedList<Integer>();
+		for(int i=0; i<count; i++)
+			field.add(random.nextInt(count));
+		return field;
+	}
+
+	private void solveFirstChoice(List<Integer> problem, int allowedSideSteps) {
+		int value = evaluateState(problem);
+		int newValue = 0;
+		int takenSideSteps = 0;
+		LinkedList<Integer> newProblem = null;
+		List<LinkedList<Integer>> sideSteps = new LinkedList<LinkedList<Integer>>();
+		Boolean foundSomethingNew = true;
+		//for each column
+		while(foundSomethingNew && value > 0){
+			steps++;
+			foundSomethingNew = false;
+			for(int i=0; i<problem.size(); i++){
+				newProblem = new LinkedList<Integer>(problem);
+				//for each possible new location (even the same)
+				for(int j=0; j<problem.size(); j++){
+					newProblem.set(i, j);
+					// is it better ?
+					newValue = evaluateState(newProblem);
+					if( newValue < value){
+						//reset sidesteps
+						takenSideSteps = 0;
+						problem = newProblem;
+						foundSomethingNew = true;
+					} else {
+						if( newValue == value)
+							sideSteps.add(newProblem);
+					}
+					if(foundSomethingNew)
+						break;
+				}
+				if(foundSomethingNew)
+					break;
+			}
+			value = evaluateState(problem);
+			//need to make a sidestep ?
+			if(!foundSomethingNew && !sideSteps.isEmpty() && (takenSideSteps < allowedSideSteps)){
+				takenSideSteps++;
+				problem = sideSteps.get((new Random()).nextInt(sideSteps.size()));
+				foundSomethingNew = true;
+			}
+		}
+		if(value == 0){
+			solution = problem;
+		}
+	}
+
+	private int evaluateState(List<Integer> node){
+		if(node == null)
+			return 0;
+
+		int value = 0;
+		//stop one before the last
+		for(int i=0; i<(node.size()-1); i++){
+			//start one right of the chosen one
+			for(int j=i+1; j<node.size(); j++){
+				// same row
+				if(node.get(i) == node.get(j))
+					value++;
+				//same diagonal
+				if( (j-i) == Math.abs(node.get(j)-node.get(i)) )
+					value++;
+			}
+		}
+		return value;
+	}
 }
