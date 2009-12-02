@@ -1,10 +1,6 @@
 import java.text.DecimalFormat;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import queens.base.*;
 
@@ -53,7 +49,7 @@ public class MyQueensSolver implements IQueensSolver
 {
 	private List<Integer> solution = null;
 	private int steps = 0;
-	private Random random = new Random();
+	private Random random = new Random(System.currentTimeMillis());
     // Die erste Aufgabe ist es, für eine bestimmte Damenanzahl (queenCount),
     // eine Hillclimbingstrategie (firstChoice) und eine erlaubte Anzahl an sukzessiven
     // Seitschritten (allowedSideSteps) einen Lösungsversuch zu unternehmen.
@@ -107,8 +103,14 @@ public class MyQueensSolver implements IQueensSolver
     // in einem einfachen Diagramm dargestellt, auch der Maximal- und Minimalwert werden angezeigt.
     public double[] getAvgStepsPerSuccessfulSolution(int queenCount, boolean useFirstChoice, int tryCount)
     {
-        double[] statistik=new double[101];
+        double[] statistic = new double[101];
 
+		int startSideStep = 100;
+		int endSideStep = 100;
+
+		System.out.println("\nDo "+tryCount+" rounds with "+(useFirstChoice ? "first choice":"best choice")
+				+" from sideStep "+startSideStep+" to "+endSideStep+"\n");
+		
 		DecimalFormat df = new DecimalFormat("#.000");
 
 		List<Integer> neededStepsSolved = new LinkedList<Integer>();
@@ -117,7 +119,7 @@ public class MyQueensSolver implements IQueensSolver
 		int countSolved;
 
 		//for 100 different step counts
-		for(int i=0; i<101; i++){
+		for(int i=startSideStep; i<(endSideStep+1); i++){
 			neededStepsSolved.clear();
 			neededStepsUnsolved.clear();
 			countSolved = 0;
@@ -152,9 +154,9 @@ public class MyQueensSolver implements IQueensSolver
                             averageSteps = Double.POSITIVE_INFINITY;
                         }
 
-			statistik[i] = averageSteps;
-			System.out.println("Sidesteps "+i+"\tSteps "+df.format(averageSteps)+"\tsolved "+df.format(percentSolved*100)
-					+"%\tsteps solved "+df.format(averageStepsSolved)+"\tsteps unsolved "+df.format(averageStepsUnsolved));
+			statistic[i] = averageSteps;
+			System.out.println("Sidesteps: ;"+i+";\tSteps: ;"+df.format(averageSteps)+";\tsolved: ;"+df.format(percentSolved*100)
+					+";%\tSteps solved: ;"+df.format(averageStepsSolved)+";\tSteps unsolved: ;"+df.format(averageStepsUnsolved));
 		}
 
         //für alle erlaubten Seitenschrittanzahlen von 0 bis einschliesslich 100:
@@ -165,7 +167,7 @@ public class MyQueensSolver implements IQueensSolver
         //          30.53 Züge nötig sind.
         //   -> statistik[1]=30.53;
 
-        return statistik;
+        return statistic;
     }
 
 	private int[] getSolutionQueenPositions(int queenCount) {
@@ -193,15 +195,12 @@ public class MyQueensSolver implements IQueensSolver
 		List<LinkedList<Integer>> sideSteps = new LinkedList<LinkedList<Integer>>();
 		// collect the best possible states and choose random
 		List<LinkedList<Integer>> collect = new LinkedList<LinkedList<Integer>>();
-		// do not visit on state twice while side-stepping
-		Map<Integer, Boolean> visitedStates = new HashMap<Integer, Boolean>();
 		Boolean foundSomethingNew = true;
 		//until we cant get better
 		while(foundSomethingNew){
 		//	System.err.println(problem+" "+value);
 
-                        sideSteps.clear();
-                   //     visitedStates.clear();
+            sideSteps.clear();
 
 			foundSomethingNew = false;
 			//for each column
@@ -217,7 +216,6 @@ public class MyQueensSolver implements IQueensSolver
 						if( newValue < value){
 							//reset sidesteps
 							takenSideSteps = 0;
-                                                        visitedStates.clear();
 
 							//reset collect
 							collect.clear();
@@ -226,18 +224,19 @@ public class MyQueensSolver implements IQueensSolver
 
 							foundSomethingNew = true;
 							if(value == 0){
-                                                                steps++;
+                                steps++;
 								solution = new LinkedList<Integer>(newProblem);
 								return;
 							}
 						} else {
-							//we only need the sideSteps if we havent found anything yet
 							if( newValue == value){
+							//we only need the sideSteps if we havent found anything yet
 								if(!foundSomethingNew){
-                                                   //                 if(!visitedStates.containsKey(newProblem.hashCode()))
 									sideSteps.add(new LinkedList<Integer>(newProblem));
 //								System.err.println("new SideStep "+newProblem);
 								} else {
+									//we have foound something and this is equal to it
+									// -> collect to choose a random one
 									collect.add(new LinkedList<Integer>(newProblem));
 								}
 							}
@@ -247,7 +246,7 @@ public class MyQueensSolver implements IQueensSolver
 			}
 			if(foundSomethingNew){
 				problem = collect.get(random.nextInt(collect.size()));
-               			steps++;
+    			steps++;
 
 			}
 			//need to make a sidestep ?
@@ -256,7 +255,6 @@ public class MyQueensSolver implements IQueensSolver
 				takenSideSteps++;
 //				System.err.println("replace "+problem);
 				problem = sideSteps.get(random.nextInt(sideSteps.size()));
-				visitedStates.put(problem.hashCode(), false);
 //				System.err.println("with    "+problem);
 				foundSomethingNew = true;
 			}
@@ -269,13 +267,14 @@ public class MyQueensSolver implements IQueensSolver
 		int takenSideSteps = 0;
 		LinkedList<Integer> newProblem = null;
 		LinkedList<Integer> sideStep = null;
-		Map<Integer, Boolean> visitedStates = new HashMap<Integer, Boolean>();
 		Boolean foundSomethingNew = true;
 		//for each column
-		while(foundSomethingNew && value > 0){
-			System.err.println(problem+" "+value);
-			steps++;
+		while(foundSomethingNew){
+		//	System.err.println(problem+" "+value);
 			foundSomethingNew = false;
+
+			sideStep = null;
+
 			for(int i=0; i<problem.size(); i++){
 				//for each possible new location (even the same)
 				for(int j=0; j<problem.size(); j++){
@@ -287,9 +286,9 @@ public class MyQueensSolver implements IQueensSolver
 						// is it better ?
 						newValue = evaluateState(newProblem);
 						if( newValue < value){
+							steps++;
 							//reset sidesteps
 							takenSideSteps = 0;
-							visitedStates.clear();
 							problem = newProblem;
 							value = evaluateState(problem);
 							foundSomethingNew = true;
@@ -298,7 +297,7 @@ public class MyQueensSolver implements IQueensSolver
 								return;
 							}
 						} else {
-							if( newValue == value && sideStep == null && !visitedStates.containsKey(newProblem.hashCode())){
+							if( newValue == value && sideStep == null){
 								sideStep = new LinkedList<Integer>(newProblem);
 							}
 						}
@@ -312,9 +311,9 @@ public class MyQueensSolver implements IQueensSolver
 			}
 			//need to make a sidestep ?
 			if(!foundSomethingNew && sideStep!=null && (takenSideSteps < allowedSideSteps)){
+				steps++;
 				takenSideSteps++;
 				problem = sideStep;
-				visitedStates.put(problem.hashCode(), true);
 				foundSomethingNew = true;
 			}
 		}
