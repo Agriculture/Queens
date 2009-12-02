@@ -117,7 +117,7 @@ public class MyQueensSolver implements IQueensSolver
 		int countSolved;
 
 		//for 100 different step counts
-		for(int i=100; i<101; i++){
+		for(int i=0; i<101; i++){
 			neededStepsSolved.clear();
 			neededStepsUnsolved.clear();
 			countSolved = 0;
@@ -198,7 +198,10 @@ public class MyQueensSolver implements IQueensSolver
 		Boolean foundSomethingNew = true;
 		//until we cant get better
 		while(foundSomethingNew){
-//			System.err.println(problem+" "+value);
+		//	System.err.println(problem+" "+value);
+
+                        sideSteps.clear();
+                   //     visitedStates.clear();
 
 			foundSomethingNew = false;
 			//for each column
@@ -214,6 +217,7 @@ public class MyQueensSolver implements IQueensSolver
 						if( newValue < value){
 							//reset sidesteps
 							takenSideSteps = 0;
+                                                        visitedStates.clear();
 
 							//reset collect
 							collect.clear();
@@ -230,7 +234,7 @@ public class MyQueensSolver implements IQueensSolver
 							//we only need the sideSteps if we havent found anything yet
 							if( newValue == value){
 								if(!foundSomethingNew){
-                                                                    if(!visitedStates.containsKey(newProblem.hashCode()))
+                                                   //                 if(!visitedStates.containsKey(newProblem.hashCode()))
 									sideSteps.add(new LinkedList<Integer>(newProblem));
 //								System.err.println("new SideStep "+newProblem);
 								} else {
@@ -243,7 +247,6 @@ public class MyQueensSolver implements IQueensSolver
 			}
 			if(foundSomethingNew){
 				problem = collect.get(random.nextInt(collect.size()));
-				visitedStates.clear();
                			steps++;
 
 			}
@@ -270,7 +273,7 @@ public class MyQueensSolver implements IQueensSolver
 		Boolean foundSomethingNew = true;
 		//for each column
 		while(foundSomethingNew && value > 0){
-//			System.err.println(problem+" "+value);
+			System.err.println(problem+" "+value);
 			steps++;
 			foundSomethingNew = false;
 			for(int i=0; i<problem.size(); i++){
