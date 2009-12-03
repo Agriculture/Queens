@@ -10,6 +10,6 @@ public class Main
         //IQueensSolver benutzt, um Lösungen für verschiedene Damen-Anzahlen zu erzeugen
         //und Statistiken zu erstellen.
         IQueensSolver queen = new MyQueensSolver();
-		queen.getAvgStepsPerSuccessfulSolution(8, false, 10000);
+		queen.getAvgStepsPerSuccessfulSolution(8, true, 50000);
     }
 }

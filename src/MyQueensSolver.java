@@ -105,7 +105,7 @@ public class MyQueensSolver implements IQueensSolver
     {
         double[] statistic = new double[101];
 
-		int startSideStep = 100;
+		int startSideStep = 0;
 		int endSideStep = 100;
 
 		System.out.println("\nDo "+tryCount+" rounds with "+(useFirstChoice ? "first choice":"best choice")
@@ -126,7 +126,7 @@ public class MyQueensSolver implements IQueensSolver
 			// try it many times
 			for(int j=0; j<tryCount; j++){
 				SolveErg erg = this.solveNQueens(queenCount, useFirstChoice, i);
-				// svave the steps
+				// save the steps
 				if(!erg.isUnsolvable()){
 					countSolved++;
 					neededStepsSolved.add(erg.getSteps());
@@ -181,6 +181,10 @@ public class MyQueensSolver implements IQueensSolver
 		List<Integer> field = new LinkedList<Integer>();
 		for(int i=0; i<count; i++){
 			int value = random.nextInt(count);
+			if(field.contains(value)){
+				i--;
+				continue;
+			} else
 				field.add(value);
 		}
 		return field;
@@ -266,14 +270,14 @@ public class MyQueensSolver implements IQueensSolver
 		int newValue = 0;
 		int takenSideSteps = 0;
 		LinkedList<Integer> newProblem = null;
-		LinkedList<Integer> sideStep = null;
+		List<LinkedList<Integer>> sideSteps = new LinkedList<LinkedList<Integer>>();
 		Boolean foundSomethingNew = true;
 		//for each column
 		while(foundSomethingNew){
 		//	System.err.println(problem+" "+value);
 			foundSomethingNew = false;
 
-			sideStep = null;
+			sideSteps.clear();
 
 			for(int i=0; i<problem.size(); i++){
 				//for each possible new location (even the same)
@@ -297,8 +301,8 @@ public class MyQueensSolver implements IQueensSolver
 								return;
 							}
 						} else {
-							if( newValue == value && sideStep == null){
-								sideStep = new LinkedList<Integer>(newProblem);
+							if( newValue == value){
+								sideSteps.add(new LinkedList<Integer>(newProblem));
 							}
 						}
 					}
@@ -310,10 +314,10 @@ public class MyQueensSolver implements IQueensSolver
 					break;
 			}
 			//need to make a sidestep ?
-			if(!foundSomethingNew && sideStep!=null && (takenSideSteps < allowedSideSteps)){
+			if(!foundSomethingNew && !sideSteps.isEmpty() && (takenSideSteps < allowedSideSteps)){
 				steps++;
 				takenSideSteps++;
-				problem = sideStep;
+				problem = sideSteps.get(random.nextInt(sideSteps.size()));
 				foundSomethingNew = true;
 			}
 		}
